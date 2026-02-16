@@ -50,7 +50,7 @@ uf = [z(32);z(33)];
 
 ufdot = -beta*uf + beta*tau;
 %% Test Code
-uf - Yf*Theta
+uf - Yf*Theta;
 
 %% Closed Loop Dynamics 
 rdot = Minv*(Y*Theta - tau - Vm*r);

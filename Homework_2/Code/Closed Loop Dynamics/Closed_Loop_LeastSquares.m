@@ -52,10 +52,10 @@ uf = [z(32);z(33)];
 % Gamma
 Gamma = reshape(z(34:114),9,9);
 
-Etadot = Adaptive_Closed_Loop(Y,Yf,uf,tau,Gamma,Theta_Tilde)
+Etadot = Adaptive_Closed_Loop(Y,Yf,uf,tau,Gamma,Theta_Tilde);
 
 %% Test Code
-uf - Yf*Theta
+uf - Yf*Theta;
 
 %% Closed Loop Dynamics 
 rdot = Minv*(Y*Theta - tau - Vm*r);
