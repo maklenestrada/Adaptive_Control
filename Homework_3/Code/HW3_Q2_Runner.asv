@@ -1,0 +1,143 @@
+clear all;clc;close all
+%% Initial Condition
+e1 = 0.001;
+e2 = 0.001;
+e = [e1;e2];
+
+Theta_Tilde = 1e-3*ones(4,1);
+
+z0 = [e;Theta_Tilde];
+
+%% PE xd's
+PE = 1; %Desired Trajectory that is PE
+NPE = 2; %Desired Trajectory that is not PE
+
+%% Run Sim
+tspan = [0 30];
+[tSim_PE,zSim_PE] = ode45(@(t,z) Closed_Loop_Dynamics(t,z,PE), tspan,z0);
+[tSim_NPE,zSim_NPE] = ode45(@(t,z) Closed_Loop_Dynamics(t,z,NPE), tspan,z0);
+
+%% Plotting
+% Extract errors
+e1_PE  = zSim_PE(:,1);
+e2_PE  = zSim_PE(:,2);
+
+e1_NPE = zSim_NPE(:,1);
+e2_NPE = zSim_NPE(:,2);
+
+% Log scale tracking errors
+e1_PE_log  = log10(abs(e1_PE));
+e2_PE_log  = log10(abs(e2_PE));
+
+e1_NPE_log = log10(abs(e1_NPE));
+e2_NPE_log = log10(abs(e2_NPE));
+
+%% Plot Tracking Errors
+figure;
+subplot(2,1,1)
+plot(tSim_PE,  e1_PE_log,  'k', 'LineWidth',2); 
+hold on;
+plot(tSim_NPE, e1_NPE_log, 'b','LineWidth',2);
+grid on;
+ylabel('log_{10}|e_1|');
+title('Tracking Error e_1');
+legend('PE','Not PE');
+
+subplot(2,1,2)
+plot(tSim_PE,  e2_PE_log,  'k', 'LineWidth',2); 
+hold on;
+plot(tSim_NPE, e2_NPE_log, 'b','LineWidth',2);
+grid on;
+xlabel('Time (s)');
+ylabel('log_{10}|e_2|');
+title('Tracking Error e_2');
+legend('PE','Not PE');
+
+% Extract Theta_Tilde 
+Theta_Tilde_PE  = zSim_PE(:,3:6);
+Theta_Tilde_NPE = zSim_NPE(:,3:6);
+
+% Compute 2-norm
+norm_PE  = vecnorm(Theta_Tilde_PE ,2,2);
+norm_NPE = vecnorm(Theta_Tilde_NPE,2,2);
+
+% Plot Parameter Error Norm
+figure
+plot(tSim_PE,  norm_PE,  'k','LineWidth',2); 
+hold on
+plot(tSim_NPE, norm_NPE, 'b','LineWidth',2);
+grid on
+xlabel('Time (s)')
+ylabel('||\theta~||')
+title('Parameter Estimation Error Norm')
+legend('PE','Not PE')
+
+
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Gains 
+function Gains = PEGains()
+    ke = 2;
+    Gamma = eye(4);
+    
+    Gains.ke = ke;
+    Gains.Gamma = Gamma;
+end
+
+%% Regressor Matrix
+function Y = Y_Matrix(x)
+    Y = [x(1), x(2), 0, 0; 0, 0, x(1), x(2)];
+end
+
+%% Desired Trajectories
+function xd = DesiredTrajectory(idx,t)
+    if idx == 1
+        xd = [cos(t);cos(2*t)];
+    elseif idx == 2
+        xd = [cos(t);3*cos(t)];
+    end
+end
+
+%% Unkown Matrix
+function A = UnkownMatrix(ke)
+    A = [ke/10,ke/10;ke/10,ke/10];
+end
+
+%% Closed Loop Dynamics
+function zdot = Closed_Loop_Dynamics(t,z,idx)
+    % Extract State Vector 
+    e = [z(1);z(2)];
+    Theta_Tilde = [z(3);z(4);z(5);z(6)];
+    
+    % Extract gains
+    G = PEGains();
+    ke = G.ke;
+    Gamma = G.Gamma;
+    
+    % Desired Trajectory
+    xd = DesiredTrajectory(idx,t);
+    
+    % Compute regressor matrix
+    Yd = Y_Matrix(xd);
+    
+    %Unknown Matrix
+    Ye = 
+    A = UnkownMatrix(ke);
+    Anorm = vecnorm(A,2,2);
+
+    %Enforcing bound on A 
+    if Anorm > ke
+        A = [0,0;0,0];
+    end
+
+    % Closed Loop Dynamics
+    edot = -ke*e - Yd*Theta_Tilde + A*e;
+    ThetaTildedot = -Gamma*(Yd')*e;
+    
+    zdot = [edot;ThetaTildedot(:)];
+end

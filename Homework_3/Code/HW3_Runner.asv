@@ -1,0 +1,153 @@
+clear all;clc;close all
+%% Initial Condition
+r1 = 0.1;
+r2 = 0.1;
+r = [r1;r2];
+
+e1 = 0;
+e2 = 0;
+e = [e1;e2];
+
+Theta_Tilde = zeros(9,1);
+
+uf = zeros(2,1);
+G = Gains();
+Gamma = G.Gamma;
+
+Y1fTilde = zeros(2,9);
+Yf = zeros(2,9);
+Ydf = zeros(2,9);
+uf = zeros(2,1);
+
+z0 = [r;e;Theta_Tilde];
+z0_TF = [r;e;Theta_Tilde;Yf(:);uf];
+z0_LS = [r;e;Theta_Tilde;Yf(:);uf; Gamma(:)];
+z0_CompDCAL = [r;e;Theta_Tilde;Y1fTilde(:);Yf(:);Ydf(:);uf];
+%% Solving for q,qdot
+% Desired Trajectories qd,qd_dot,qd_ddot
+t0 = 0;
+qd = DesiredTraj_qd(t0);
+qd_dot = DesiredTraj_qd_dot(t0);
+
+%Value for alpha
+G = Gains();
+alpha = G.alpha;
+
+q0 = qd - e;
+q_dot0 = qd_dot - r + alpha*e;
+
+
+%% Run Sim
+tspan = [0 60];
+[tSim,zSim] = ode45(@(t,z) Closed_Loop_Traditional(t,z), tspan,z0);
+[tSim_TF,zSim_TF] = ode45(@(t,z) Closed_Loop_Composite(t,z), tspan,z0_TF);
+[tSim_LS,zSim_LS] = ode45(@(t,z) Closed_Loop_LeastSquares(t,z), tspan,z0_LS);
+[tSim_DCAL,zSim_DCAL] = ode45(@(t,z) Closed_Loop_Traditional_DCAL(t,z), tspan,z0);
+[tSim_CompDCAL,zSim_CompDCAL] = ode45(@(t,z) Closed_Loop_Composite_DCAL(t,z), tspan,z0_CompDCAL);
+
+%% Extract errors
+% Traditional Adaptive Controller
+e1_trad = zSim(:,3);
+e2_trad = zSim(:,4);
+
+% Torque-Filtered / Composite Adaptive Controller
+e1_TF = zSim_TF(:,3);
+e2_TF = zSim_TF(:,4);
+
+% Least-Squares Adaptive Controller 
+e1_LS = zSim_LS(:,3);
+e2_LS = zSim_LS(:,4);
+
+% Traditional Adaptive Controller DCAL
+e1_DCAL = zSim_DCAL(:,3);
+e2_DCAL = zSim_DCAL(:,4);
+
+% Composite Adaptive Controller DCAL
+e1_CompDCAL = zSim_CompDCAL(:,3);
+e2_CompDCAL = zSim_CompDCAL(:,4);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Traditional Adaptive Controller
+e1_trad = log10(abs(e1_trad));
+e2_trad = log10(abs(e2_trad));
+
+% Torque-Filtered / Composite Adaptive Controller
+e1_TF = log10(abs(e1_TF));
+e2_TF = log10(abs(e2_TF));
+
+% Least-Squares Adaptive Controller 
+e1_LS = log10(abs(e1_LS));
+e2_LS = log10(abs(e2_LS));
+
+% Traditional Adaptive Controller DCAL
+e1_DCAL = log10(abs(e1_DCAL));
+e2_DCAL = log10(abs(e2_DCAL));
+
+% Composite Adaptive Controller DCAL
+e1_CompDCAL = log10(abs(e1_CompDCAL));
+e2_CompDCAL = log10(abs(e2_CompDCAL));
+
+% Plot Tracking Errors in Subplots
+figure;
+subplot(2,1,1)
+plot(tSim, e1_trad, 'k', 'LineWidth', 2); 
+hold on;
+plot(tSim_DCAL, e1_DCAL, 'r', 'LineWidth', 2);
+plot(tSim_TF, e1_TF, 'b', 'LineWidth', 2);
+%plot(tSim_LS, e1_LS, 'b', 'LineWidth', 2);
+plot(tSim_CompDCAL, e1_CompDCAL, 'c', 'LineWidth', 2);
+grid on;
+ylabel('e_1');
+title('Tracking Error e_1');
+%legend('Traditional','Torque-Filtering','Least-Squares','Traditional with DCAL','Composite with DCAL');
+legend('Traditional','Traditional with DCAL','Composite','Composite with DCAL');
+
+subplot(2,1,2)
+plot(tSim, e2_trad, 'k', 'LineWidth', 2); hold on;
+plot(tSim_TF, e2_TF, 'b', 'LineWidth', 2);
+%plot(tSim_LS, e2_LS, 'b', 'LineWidth', 2);
+
+plot(tSim_CompDCAL, e1_CompDCAL, 'c', 'LineWidth', 2);
+grid on;
+xlabel('Time (s)');
+ylabel('e_2');
+title('Tracking Error e_2');
+%legend('Traditional','Torque-Filtering','Least-Squares','Traditional with DCAL','Composite with DCAL');
+legend('Traditional','Traditional with DCAL','Composite','Composite with DCAL');
+%% Extract Theta_Tilde blocks
+Theta_Tilde_Trad = zSim(:,5:13);
+Theta_Tilde_TF   = zSim_TF(:,5:13);
+Theta_Tilde_LS   = zSim_LS(:,5:13);
+Theta_Tilde_DCAL = zSim_DCAL(:,5:13);
+Theta_Tilde_CompDCAL = zSim_CompDCAL(:,5:13);
+
+% Compute 2-norm of Theta_Tilde at each time
+norm_Trad = vecnorm(Theta_Tilde_Trad,2,2);
+norm_TF   = vecnorm(Theta_Tilde_TF,2,2);
+norm_LS   = vecnorm(Theta_Tilde_LS,2,2);
+norm_DCAL = vecnorm(Theta_Tilde_DCAL,2,2);
+norm_CompDCAL = vecnorm(Theta_Tilde_CompDCAL,2,2);
+
+% eps_val = 0;
+% 
+% norm_Trad = log10(norm_Trad + eps_val);
+% norm_TF   = log10(norm_TF   + eps_val);
+% norm_LS   = log10(norm_LS   + eps_val);
+
+figure
+plot(tSim, norm_Trad,'k','LineWidth',2); 
+hold on
+plot(tSim_TF, norm_TF,'b', 'LineWidth',2);
+%plot(tSim_LS, norm_LS,'b', 'LineWidth',2);
+plot(tSim_DCAL,norm_DCAL,'r','LineWidth',2);
+plot(tSim_CompDCAL,norm_CompDCAL,'c','LineWidth',2);
+xlabel('Time (s)')
+ylabel('$\|\tilde{\theta}\|$', 'Interpreter','latex')
+title('Parameter Estimation')
+%legend('Traditional','Torque-Filtering','Least-Squares','Traditional with DCAL','Composite with DCAL');
+legend('Traditional','Composite','Traditional with DCAL','Composite with DCAL');
+grid on
+xl = xlim;
+xlim([1 xl(2)])
+
+
