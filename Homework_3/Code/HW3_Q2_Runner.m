@@ -13,7 +13,7 @@ PE = 1; %Desired Trajectory that is PE
 NPE = 2; %Desired Trajectory that is not PE
 
 %% Run Sim
-tspan = [0 30];
+tspan = [0 60];
 [tSim_PE,zSim_PE] = ode45(@(t,z) Closed_Loop_Dynamics(t,z,PE), tspan,z0);
 [tSim_NPE,zSim_NPE] = ode45(@(t,z) Closed_Loop_Dynamics(t,z,NPE), tspan,z0);
 
@@ -35,23 +35,23 @@ e2_NPE_log = log10(abs(e2_NPE));
 %% Plot Tracking Errors
 figure;
 subplot(2,1,1)
-plot(tSim_PE,  e1_PE_log,  'b', 'LineWidth',2); 
+plot(tSim_PE,  e1_PE,  'b', 'LineWidth',2); 
 hold on;
-plot(tSim_NPE, e1_NPE_log, 'r','LineWidth',2);
+plot(tSim_NPE, e1_NPE, 'r','LineWidth',2);
 grid on;
-ylabel('log_{10}|e_1|');
+ylabel('e_1');
 title('Tracking Error e_1');
-legend('PE','Not PE');
+legend('Desired Trajectory P2','Desired Trajectory P3')
 
 subplot(2,1,2)
-plot(tSim_PE,  e2_PE_log,  'b', 'LineWidth',2); 
+plot(tSim_PE,  e2_PE,  'b', 'LineWidth',2); 
 hold on;
-plot(tSim_NPE, e2_NPE_log, 'r','LineWidth',2);
+plot(tSim_NPE, e2_NPE, 'r','LineWidth',2);
 grid on;
 xlabel('Time (s)');
-ylabel('log_{10}|e_2|');
+ylabel('e_2');
 title('Tracking Error e_2');
-legend('PE','Not PE');
+legend('Desired Trajectory P2','Desired Trajectory P3')
 
 % Extract Theta_Tilde 
 Theta_Tilde_PE  = zSim_PE(:,3:6);
@@ -61,29 +61,23 @@ Theta_Tilde_NPE = zSim_NPE(:,3:6);
 norm_PE  = vecnorm(Theta_Tilde_PE ,2,2);
 norm_NPE = vecnorm(Theta_Tilde_NPE,2,2);
 
-% Plot Parameter Error Norm
+% Plot Parameter
 figure
-plot(tSim_PE,  norm_PE,  'k','LineWidth',2); 
+plot(tSim_PE,  norm_PE,  'b','LineWidth',2); 
 hold on
-plot(tSim_NPE, norm_NPE, 'b','LineWidth',2);
+plot(tSim_NPE, norm_NPE, 'r','LineWidth',2);
 grid on
 xlabel('Time (s)')
-ylabel('||\theta~||')
-title('Parameter Estimation Error Norm')
-legend('PE','Not PE')
-
-
-
-
-
-
+ylabel('$\|\tilde{\theta}\|$', 'Interpreter','latex')
+title('Parameter Estimation')
+legend('Desired Trajectory P2','Desired Trajectory P3')
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Gains 
 function Gains = PEGains()
     ke = 2;
-    Gamma = eye(4);
+    Gamma = 5e-2*eye(4);
     
     Gains.ke = ke;
     Gains.Gamma = Gamma;

@@ -8,3 +8,9 @@ function qd_ddot = DesiredTraj_qd_ddot(t)
          - 4.93480*cos(pi*t);
     qd_ddot = [qd1DDot; qd2DDot];
 end
+
+% function qd_ddot = DesiredTraj_qd_ddotLE(t)
+%     qd1DDot = -0.25*sin(0.5*t);
+%     qd2DDot = -0.25*cos(0.5*t);
+%     qd_ddot = [qd1DDot; qd2DDot];
+% end

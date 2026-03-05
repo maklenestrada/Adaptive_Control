@@ -3,3 +3,10 @@ function qd = DesiredTraj_qd(t)
     qd2 = 0.5*cos(t) + 0.5*sin(sqrt(2)*t) + 0.5*sin(exp(1)*t) + 0.5*cos(pi*t);
     qd = [qd1; qd2];
 end
+
+
+% function qd = DesiredTraj_qd(t)
+%     qd1 = sin(0.5*t);
+%     qd2 = cos(0.5*t);
+%     qd = [qd1; qd2];
+% end
